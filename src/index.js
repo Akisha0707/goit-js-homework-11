@@ -1,78 +1,89 @@
 //підключаємо імпортовані файли та бібліотеки
-import SlimSelect from 'slim-select';
-import 'slim-select/dist/slimselect.css';
+import axios from 'axios';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 import Notiflix from 'notiflix';
-import { fetchBreeds, fetchCatByBreed } from './cat-api.js';
 
-//звертаємось до дом-елементів
-const getSelect = document.querySelector('.breed-select'); //випадаючий список
-const getCat = document.querySelector('.cat-info'); //картинки котів і інформція
-const loaderAnswer = document.querySelector('.loader');
-const errorAnswer = document.querySelector('.error');
+const API_Key = '?key=41255636-c4f744f2bee1451fa093ac625';
+const BASE_URL = 'https://pixabay.com/api/';
 
-//додаємо стилі
-getSelect.style.fontSize = '18px';
-getCat.style.display = 'flex';
-getCat.style.gap = '20px';
+const getForm = document.querySelector('.search-form');
+const getGallery = document.querySelector('.gallery');
 
-getSelect.style.visibility = 'visibility';
-errorAnswer.style.visibility = 'hidden';
-loaderAnswer.style.visibility = 'hidden';
+getForm.addEventListener('submit', onSearchImages);
 
-new SlimSelect({
-  select: '#getSelect',
-  settings: {
-    contentLocation: document.getElementById('local'),
-  },
-});
+function onSearchImages(event) {
+  event.preventDefault();
 
-//обробляємо отриманий проміс колекції котів
-fetchBreeds()
-  .then(breeds => {
-    getSelect.insertAdjacentHTML('beforeend', createMarkUp(breeds.data));
-    // getSelect.style.visibility = 'hidden';
-    loaderAnswer.classList.replace('hedden', 'visibility');
-  })
-  .catch(error => {
-    console.log(error);
-    Notiflix.Notify.failure(errorAnswer.textContent);
-  });
+  const { searchQuery } = event.currentTarget.elements;
 
-//відмальовуємо на сторінці випадаючий список
-function createMarkUp(event) {
-  return event
-    .map(({ id, name }) => `<option value=${id}>${name}</option>`)
-    .join('');
-}
-
-//додаємо прослуховувач на випадаючий список
-getSelect.addEventListener('change', onGetElement);
-
-function onGetElement(event) {
-  fetchCatByBreed(this.value)
-    .then(cat => {
-      getCat.insertAdjacentHTML('beforeend', createMarkUpTo(cat.data));
-      // getCat.style.visibility = 'hidden';
-      loaderAnswer.classList.replace('hedden', 'visibility');
+  getImages(searchQuery.value)
+    .then(data => {
+      console.log(data.data.hits);
+      if (data.data.hits !== []) {
+        return getGallery.insertAdjacentHTML(
+          'beforeend',
+          createMarkUp(data.data.hits)
+        );
+      } else {
+        Notiflix.Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+      }
     })
     .catch(error => {
       console.log(error);
-      Notiflix.Notify.failure(errorAnswer.textContent);
+    })
+    .finally(() => {
+      getForm.innerHTML = '';
+      // setTimeout(() => {
+      //   .innerHTML = '';
+      // }, 5000);
     });
-  getCat.innerHTML = '';
 }
 
-//відмальовуємо картинки і iформацію про котів на сторінці
-function createMarkUpTo(event) {
-  return event
+async function getImages() {
+  return await axios(
+    BASE_URL +
+      API_Key +
+      `&q${getForm}=&image_type=photo&orientation=horizontal&safesearch=true`
+  );
+}
+
+function createMarkUp(arr) {
+  console.log(arr);
+  return arr
     .map(
-      ({ url, id }) =>
-        `<img src=${url} id=${id}, width=450px, height=450px>
-        <div class=header-cat>
-        <h1>${event[0].breeds[0].name}</h1>
-      <p>${event[0].breeds[0].description}</p>
-      <h2>Temperament:</h2>${event[0].breeds[0].temperament}
-      </div>`
+      ({
+        webformatURL,
+        largeImageURL,
+        tags,
+        likes,
+        views,
+        comments,
+        downloads,
+      }) =>
+        `<div class="photo-card">
+  <img src="${
+    (webformatURL, largeImageURL)
+  }" alt="${tags}" loading="lazy" width='450px' hight='450px' />
+  <div class="info">
+  <p class="info-item">
+      <b>Likes ${likes}</b>
+    </p>
+    <p class="info-item">
+      <b>Views ${views}</b>
+    </p>
+    <p class="info-item">
+      <b>Comments ${comments}</b>
+    </p>
+    <p class="info-item">
+      <b>Downloads ${downloads}</b> 
+    </p>
+  </div>
+</div>`
     )
     .join('');
 }
+
+// getButton.addEventListener('submit', onSubmit);

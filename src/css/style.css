@@ -1,3 +1,16 @@
 * {
   box-sizing: border-box;
 }
+
+.info-item {
+  display: inline;
+  font-size: 20px;
+}
+
+.gallery {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  visibility: visible;
+}
